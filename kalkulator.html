@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Tugas Akhir - Professional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        
+        .history-scroll::-webkit-scrollbar { 
+            width: 8px;
+        }
+        .history-scroll::-webkit-scrollbar-track { 
+            background: rgba(248, 250, 252, 0.5);
+            border-radius: 10px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb { 
+            background: rgba(71, 85, 105, 0.3);
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .history-scroll::-webkit-scrollbar-thumb:hover { 
+            background: rgba(71, 85, 105, 0.6);
+        }
+        
+        .btn-active {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+            font-feature-settings: "tnum";
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-active:active { 
+            transform: scale(0.93);
+        }
+
+        .btn-active:not(.btn-gradient):hover {
+            background-color: rgba(203, 213, 225, 0.5);
+        }
+
+        .transition-fast { 
+            transition: all 0.1s ease-in-out;
+        }
+        
+        /* Smooth scroll */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1.5px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 8px 32px 0 rgba(6, 182, 212, 0.1);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%);
+            transition: left 0.5s ease;
+        }
+
+        .btn-gradient:hover::before {
+            left: 100%;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-gradient:active {
+            transform: translateY(-1px);
+        }
+
+        #curr-display {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        #prev-display {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.05em;
+        }
+
+        #history-list > div {
+            transition: all 0.2s ease;
+        }
+
+        #history-list > div:hover {
+            background: rgba(6, 182, 212, 0.05);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        @keyframes memorypulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-pulse {
+            animation: memorypulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 16px; }
+            #curr-display { font-size: 3rem; }
+        }
+
+        @media (max-width: 1024px) {
+            .glass {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="flex flex-col lg:flex-row gap-8 w-full max-w-5xl justify-center items-center">
+        <div class="w-full max-w-md glass rounded-3xl shadow-2xl overflow-hidden">
+            <div class="bg-gradient-to-br from-slate-300 to-slate-400 p-8 text-right relative">
+                <div id="memory-indicator" class="absolute top-6 left-6 flex items-center gap-2 text-sm font-bold text-cyan-600 opacity-0 transition-opacity">
+                    <span class="w-2 h-2 bg-cyan-600 rounded-full animate-pulse"></span>
+                    <span>M</span>
+                    <span id="mem-val" class="font-normal opacity-70 text-xs"></span>
+                </div>
+
+                <div id="prev-display" class="text-slate-500 text-sm h-6 font-medium overflow-hidden whitespace-nowrap mb-2 tracking-wide"></div>
+                
+                <div id="curr-display" class="text-white text-6xl font-bold tracking-tight overflow-x-auto whitespace-nowrap scrollbar-hide leading-tight">0</div>
+            </div>
+            <div class="p-6 bg-gradient-to-b from-slate-50 to-white">
+                <div class="grid grid-cols-4 gap-2 mb-4 pb-4 border-b border-slate-200">
+                    <button onclick="handleMemory('MC')" class="btn-active text-xs font-bold text-black py-2.5 rounded-lg hover:bg-slate-200 transition-fast">MC</button>
+                    <button onclick="handleMemory('MR')" class="btn-active text-xs font-bold text-black py-2.5 rounded-lg hover:bg-slate-200 transition-fast">MR</button>
+                    <button onclick="handleMemory('M+')" class="btn-active text-xs font-bold text-black py-2.5 rounded-lg hover:bg-slate-200 transition-fast">M+</button>
+                    <button onclick="handleMemory('M-')" class="btn-active text-xs font-bold text-black py-2.5 rounded-lg hover:bg-slate-200 transition-fast">M−</button>
+                </div>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="actionClear('CE')" class="btn-active col-span-2 bg-red-100 text-red-600 font-bold py-4 rounded-xl text-lg hover:bg-red-200 transition-fast shadow-sm">CE</button>
+                    <button onclick="actionClear('C')" class="btn-active bg-red-100 text-red-600 font-bold py-4 rounded-xl text-lg hover:bg-red-200 transition-fast shadow-sm">C</button>
+                    <button onclick="appendOperator('/')" class="btn-active btn-gradient text-white font-bold py-4 rounded-xl text-xl hover:shadow-lg transition-fast">÷</button>
+                    <button onclick="appendNumber('7')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">7</button>
+                    <button onclick="appendNumber('8')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">8</button>
+                    <button onclick="appendNumber('9')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">9</button>
+                    <button onclick="appendOperator('*')" class="btn-active btn-gradient text-white font-bold py-4 rounded-xl text-xl hover:shadow-lg transition-fast">×</button>
+                    <button onclick="appendNumber('4')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">4</button>
+                    <button onclick="appendNumber('5')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">5</button>
+                    <button onclick="appendNumber('6')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">6</button>
+                    <button onclick="appendOperator('-')" class="btn-active btn-gradient text-white font-bold py-4 rounded-xl text-xl hover:shadow-lg transition-fast">−</button>
+                    <button onclick="appendNumber('1')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">1</button>
+                    <button onclick="appendNumber('2')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">2</button>
+                    <button onclick="appendNumber('3')" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">3</button>
+                    <button onclick="appendOperator('+')" class="btn-active btn-gradient text-white font-bold py-4 rounded-xl text-xl hover:shadow-lg transition-fast">+</button>
+                    <button onclick="appendNumber('0')" class="btn-active col-span-2 bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">0</button>
+                    <button onclick="appendDecimal()" class="btn-active bg-white text-slate-800 font-semibold py-4 rounded-xl text-lg shadow-sm hover:bg-slate-50 transition-fast border border-slate-200">.</button>
+                    <button onclick="calculateResult()" class="btn-active btn-gradient text-white font-bold py-4 rounded-xl text-2xl shadow-lg hover:shadow-2xl transition-fast">=</button>
+                </div>
+            </div>
+        </div>
+        <div class="w-full lg:w-80 glass rounded-3xl shadow-xl p-6 h-fit">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl"></span>
+                    <h2 class="font-bold text-slate-800 text-lg">History</h2>
+                </div>
+                <span class="text-xs text-slate-500 bg-gradient-to-r from-indigo-50 to-purple-50 px-3 py-1.5 rounded-full font-medium">5 data terakhir</span>
+            </div>
+            
+            <div id="history-list" class="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto history-scroll min-h-[150px]">
+                <p class="text-slate-400 text-sm text-center italic py-8">Belum ada data history</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentInput = '0';
+        let equation = '';
+        let shouldResetScreen = false;
+        let memory = 0;
+        let history = [];
+        const currDisplayEl = document.getElementById('curr-display');
+        const prevDisplayEl = document.getElementById('prev-display');
+        const historyListEl = document.getElementById('history-list');
+        const memoryIndicator = document.getElementById('memory-indicator');
+        const memValEl = document.getElementById('mem-val');
+
+        function updateScreen() {
+            currDisplayEl.textContent = currentInput;
+            let visualEquation = equation
+                .replace(/\*/g, ' × ')
+                .replace(/\//g, ' ÷ ')
+                .replace(/\+/g, ' + ')
+                .replace(/\-/g, ' − ');
+            
+            prevDisplayEl.textContent = visualEquation;
+        }
+
+        function appendNumber(number) {
+            if (currentInput === '0' || shouldResetScreen) {
+                currentInput = number;
+                shouldResetScreen = false;
+            } else {
+                currentInput += number;
+            }
+            updateScreen();
+        }
+
+        function appendDecimal() {
+            if (shouldResetScreen) {
+                currentInput = '0.';
+                shouldResetScreen = false;
+                updateScreen();
+                return;
+            }
+            if (!currentInput.includes('.')) {
+                currentInput += '.';
+                updateScreen();
+            }
+        }
+
+        function appendOperator(operator) {
+            if (shouldResetScreen) shouldResetScreen = false;
+            equation += currentInput + ' ' + operator + ' ';
+            currentInput = '0';
+            updateScreen();
+        }
+
+        function calculateResult() {
+            let finalEquation = equation + currentInput;
+            try {
+                let result = new Function('return ' + finalEquation)();
+                
+                if (!isFinite(result) || isNaN(result)) {
+                    currentInput = "Error";
+                    equation = '';
+                    updateScreen();
+                    return;
+                }
+
+                result = Math.round(result * 100000000) / 100000000;
+                addToHistory(finalEquation, result);
+                currentInput = result.toString();
+                equation = '';
+                shouldResetScreen = true;
+                updateScreen();
+            } catch (error) {
+                currentInput = "Error";
+                equation = '';
+                updateScreen();
+            }
+        }
+
+        function actionClear(type) {
+            if (type === 'C') {
+                currentInput = '0';
+                equation = '';
+            } else if (type === 'CE') {
+                currentInput = '0';
+            }
+            updateScreen();
+        }
+
+        function handleMemory(action) {
+            const val = parseFloat(currentInput);
+            switch(action) {
+                case 'M+':
+                    if(!isNaN(val)) memory += val;
+                    shouldResetScreen = true;
+                    break;
+                case 'M-':
+                    if(!isNaN(val)) memory -= val;
+                    shouldResetScreen = true;
+                    break;
+                case 'MC':
+                    memory = 0;
+                    break;
+                case 'MR':
+                    currentInput = memory.toString();
+                    shouldResetScreen = true;
+                    updateScreen();
+                    break;
+            }
+            if (memory !== 0) {
+                memoryIndicator.style.opacity = '1';
+                memValEl.textContent = `(${memory})`;
+            } else {
+                memoryIndicator.style.opacity = '0';
+            }
+        }
+
+        function addToHistory(eq, res) {
+            let visualEq = eq
+                .replace(/\*/g, '×')
+                .replace(/\//g, '÷')
+                .replace(/\-/g, '−');
+            const historyItem = { equation: visualEq, result: res };
+            history.unshift(historyItem);
+            if (history.length > 5) {
+                history.pop();
+            }
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyListEl.innerHTML = '';
+            if (history.length === 0) {
+                historyListEl.innerHTML = '<p class="text-slate-400 text-sm text-center italic py-8">No calculations yet</p>';
+                return;
+            }
+
+            history.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'bg-gradient-to-br from-slate-50 to-slate-100 p-4 rounded-xl border border-slate-200 hover:border-indigo-300 cursor-pointer transition-all duration-200 group shadow-sm hover:shadow-md';
+                div.style.animation = `fadeIn 0.3s ease-in-out ${index * 50}ms backwards`;
+                div.onclick = () => {
+                    currentInput = item.result.toString();
+                    updateScreen();
+                };
+                div.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="flex-1">
+                            <div class="text-xs font-medium text-slate-500 group-hover:text-indigo-600 transition-colors mb-1 tracking-tight">${item.equation}</div>
+                            <div class="text-xl font-bold text-slate-800 group-hover:text-indigo-700 transition-colors font-mono">${item.result}</div>
+                        </div>
+                        <div class="text-slate-300 group-hover:text-indigo-400 transition-colors">=</div>
+                    </div>
+                `;
+                historyListEl.appendChild(div);
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if (/[0-9]/.test(key)) appendNumber(key);
+            if (key === '.') appendDecimal();
+            if (key === '+' || key === '-') appendOperator(key);
+            if (key === '*') appendOperator('*');
+            if (key === '/') { e.preventDefault(); appendOperator('/'); }
+            if (key === 'Enter' || key === '=') { e.preventDefault(); calculateResult(); }
+            if (key === 'Backspace') actionClear('CE');
+            if (key === 'Escape') actionClear('C');
+        });
+
+    </script>
+</body>
+</html>
