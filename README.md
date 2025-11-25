@@ -2,8 +2,7 @@
 
 ## Tentang Project
 
-Ini adalah aplikasi kalkulator yang dibuat untuk memenuhi tugas akhir Pemrograman Web. Kalkulator ini dibangun dengan HTML5, CSS (Tailwind), dan JavaScript vanilla tanpa framework tambahan.
-
+Ini adalah aplikasi kalkulator yang dibuat untuk memenuhi tugas akhir Pemrograman Web. Kalkulator ini dibangun dengan HTML5, CSS (Tailwind), dan JavaScript.
 ## Fitur Utama
 
 ### Operasi Dasar
